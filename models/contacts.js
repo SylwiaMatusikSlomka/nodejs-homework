@@ -22,7 +22,7 @@ const getContactById = (contactId) => {
   return fs.readFile(path.resolve(contactsPath), 'utf8')
     .then(file => {
       const contacts = JSON.parse(file);
-      const contact = contacts.find(contact => contact.id === contactId) || {};
+      const contact = contacts.find(contact => contact.id === contactId);
       console.log(contact);
       return contact;
     })
@@ -36,10 +36,10 @@ const removeContact = (contactId) => {
   return fs.readFile(path.resolve(contactsPath), 'utf8')
     .then(file => {
       const contacts = JSON.parse(file);
-      const contactToDelete = contacts.find(contact => contact.id === contactId) || {};
+      const contactToDelete = contacts.find(contact => contact.id === contactId);
       console.log(contactToDelete);
 
-      if (Object.keys(contactToDelete).length > 0) {
+      if (contactToDelete) {
         const afterDelete = contacts.filter(contact => contact.id !== contactId);
         return fs.writeFile(path.resolve(contactsPath), JSON.stringify(afterDelete))
           .then(() => contactToDelete); 
@@ -106,7 +106,7 @@ const updateContact = (contactId, body) => {
             return contact;
           });
       } else {
-        return {}; 
+        return contact; 
       }
     })
     .catch(error => {
