@@ -2,23 +2,22 @@ const express = require('express')
 const Joi = require('joi');
 const { listContacts, getContactById, addContact, removeContact, updateContact } = require("../../models/contacts");
 
-
 const router = express.Router()
 
-router.get('/', async (req, res, next) => {
+router.get('/', (req, res, next) => {
   listContacts()
   .then((contacts) => {
     res.json(contacts);
   })
   .catch((error) => {
-    console.error('Failed to list contacts:', error);
+    next(error);
   });
 })
 
-router.get('/:contactId', async (req, res, next) => {
+router.get('/:contactId', (req, res, next) => {
   getContactById(req.params.contactId)
   .then((contact) => {
-    if(Object.keys(contact).length > 0){
+    if(contact){
       res.json(contact);
     }else{
       res.status(404).json({
@@ -27,30 +26,29 @@ router.get('/:contactId', async (req, res, next) => {
     }
   })
   .catch((error) => {
-    console.error('Failed to list contact:', error);
+    next(error);
   });
 })
 
-router.post('/', async (req, res, next) => {
-  const { name, email, phone} = req.body;
+router.post('/', (req, res, next) => {
   console.log(req.body);
 
   const schema = Joi.object({
     name: Joi.string().min(3).max(30).required(),
     email: Joi.string().email().required(),
-    phone: Joi.string().pattern(/^[0-9]{9,15}$/).required()
+    phone: Joi.string().pattern(/^\(\d{3}\) \d{3}-\d{4}$/).required()
   });
 
   const { error } = schema.validate(req.body);
   if(error){
     return res.status(400).json({
-      "message": "missing required name - field" 
+      "error": error.details 
     });
   }
 
   addContact(req.body)
   .then((contact) => {
-    if(Object.keys(contact).length > 0){
+    if(contact){
       res.status(201).json(contact);
     }else{
       res.status(404).json({
@@ -59,14 +57,14 @@ router.post('/', async (req, res, next) => {
     }
   })
   .catch((error) => {
-    console.error('Failed to list contact:', error);
+    next(error);
   });
 })
 
-router.delete('/:contactId', async (req, res, next) => {
+router.delete('/:contactId', (req, res, next) => {
   removeContact(req.params.contactId)
   .then((contact) => {
-    if(Object.keys(contact).length > 0){
+    if(contact){
       res.json(contact);
     }else{
       res.status(404).json({
@@ -75,27 +73,27 @@ router.delete('/:contactId', async (req, res, next) => {
     }
   })
   .catch((error) => {
-    console.error('Failed to list contacts:', error);
+    next(error);
   });
 })
 
-router.put('/:contactId', async (req, res, next) => {
-  if (req.body && Object.keys(req.body).length > 0) {
+router.put('/:contactId', (req, res, next) => {
+  if (req.body) {
     const schema = Joi.object({
       name: Joi.string().min(3).max(30),
       email: Joi.string().email(),
-      phone: Joi.string().pattern(/^[0-9]{9,15}$/)
+      phone: Joi.string().pattern(/^\(\d{3}\) \d{3}-\d{4}$/)
     });
   
     const { error } = schema.validate(req.body);
     if(error){
       return res.status(400).json({
-        "message": "missing required name - field" 
+        "error": error.details 
       });
     }
     updateContact(req.params.contactId, req.body)
     .then((contact) => {
-      if(Object.keys(contact).length > 0){
+      if(contact){
         res.status(200).json(contact);
       }else{
         res.status(404).json({
@@ -104,7 +102,7 @@ router.put('/:contactId', async (req, res, next) => {
       }
     })
     .catch((error) => {
-      console.error('Failed to list contact:', error);
+      next(error);
     });
   } else {
     res.status(400).json({
