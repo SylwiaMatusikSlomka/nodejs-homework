@@ -71,30 +71,25 @@ userRouter.get("/current", auth, async (req, res, next) => {
   }
 });
 
-userRouter.get("/", async (req, res, next) => {
-  try {
-    const users = await userList();
-    return res.status(200).json({
-      status: "success",
-      code: 200,
-      data: { users },
-    });
-  } catch (err) {
-    throw err;
-  }
-});
-
-userRouter.get("/:id", async (req, res, next) => {
-  const { id } = req.params;
+userRouter.get("/logout", auth, async (req, res, next) => {
+  const { id } = req.user;
+  console.log(id);
+  console.log(req.user);
   try {
     const user = await getUserById(id);
-    return res.status(200).json({
-      status: "success",
-      code: 200,
-      data: { user },
-    });
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        code: 401,
+        message: `Not authorized`,
+      });
+    }
+    user.token = null;
+    await user.save();
+    console.log(user);
+    return res.status(204).json({ message: `logout` });
   } catch (err) {
-    res.status(404).json(err.message);
+    return res.status(500).json({ message: "Not authorized" });
   }
 });
 
@@ -151,22 +146,31 @@ userRouter.post("/login", async (req, res, next) => {
   }
 });
 
-userRouter.post("/logout", auth, async (req, res, next) => {
-  const { id } = req.user;
+userRouter.get("/:id", async (req, res, next) => {
+  console.log("id");
+  const { id } = req.params;
   try {
     const user = await getUserById(id);
-    if (!user) {
-      return res.status(401).json({
-        status: "error",
-        code: 401,
-        message: `Not authorized`,
-      });
-    }
-    user.token = null;
-    await user.save();
-    return res.status(204).json({ message: `logout` });
+    return res.status(200).json({
+      status: "success",
+      code: 200,
+      data: { user },
+    });
   } catch (err) {
-    return res.status(500).json({ message: "Not authorized" });
+    res.status(404).json(err.message);
+  }
+});
+
+userRouter.get("/", auth, async (req, res, next) => {
+  try {
+    const users = await userList();
+    return res.status(200).json({
+      status: "success",
+      code: 200,
+      data: { users },
+    });
+  } catch (err) {
+    throw err;
   }
 });
 
