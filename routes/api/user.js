@@ -1,8 +1,9 @@
 const express = require("express");
-const { addUser, getUserById, loginUser, userList } = require("../../models/users.js");
+const { addUser, getUserById, loginUser, userList, pathAvatar } = require("../../models/users.js");
 const passport = require("../../config/config-passport.js");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const upload = require("../../config/multer.js");
 
 const userRouter = express.Router();
 const secret = process.env.SECRET;
@@ -168,6 +169,28 @@ userRouter.get("/", auth, async (req, res, next) => {
       status: "success",
       code: 200,
       data: { users },
+    });
+  } catch (err) {
+    throw err;
+  }
+});
+
+userRouter.patch("/avatars", auth, upload.single("avatar"), async (req, res, next) => {
+  const { id } = req.user;
+  const file = req.file;
+  if (!file) {
+    return res.status(400).json({
+      status: "missing file",
+      code: 400,
+      data: { message: "Missing file!" },
+    });
+  }
+  try {
+    const avatar = await pathAvatar(id, file);
+    return res.status(200).json({
+      status: 'success',
+      code: 200,
+      data:{avatar}
     });
   } catch (err) {
     throw err;
