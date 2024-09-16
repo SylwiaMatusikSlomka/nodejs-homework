@@ -1,5 +1,5 @@
 const express = require("express");
-const { addUser, getUserById, loginUser, userList, pathAvatar } = require("../../models/users.js");
+const { addUser, getUserById, loginUser, userList, pathAvatar, verificationEmail, verificationUser } = require("../../models/users.js");
 const passport = require("../../config/config-passport.js");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -48,6 +48,44 @@ const auth = async (req, res, next) => {
     });
   }
 };
+
+userRouter.get("/verify/:verificationToken", async (req, res, next) => {
+  const { verificationToken } = req.params;
+  try {
+    const user = await verificationUser(verificationToken);
+    if (!user) {
+      return res.json({
+        message: `User not found`,
+      });
+    }
+
+    return res.status(200).json({
+      message: `Verification success`,
+      code: 200,
+      data: { user },
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+userRouter.post("/verify/", async (req, res, next) => {
+  const { email, verificationToken } = req.body;
+  if (!email) {
+    res.status(400).json({ message: "missing require field" });
+  }
+  try {
+    const user = await verificationEmail(email, verificationToken);
+    return res.status(200).json({
+      status: "success",
+      message: `Verification email sent`,
+      code: 200,
+      data: { user },
+    });
+  } catch (err) {
+    res.status(400).json({ message: `Verification has already been passed` });
+  }
+});
 
 userRouter.get("/current", auth, async (req, res, next) => {
   const { id } = req.user;
@@ -127,6 +165,9 @@ userRouter.post("/login", async (req, res, next) => {
         code: 201,
         data: { message: "Email or password is wrong" },
       });
+    }
+    if (!user.verify) {
+      return res.status(400).json(`Verification is essential`);
     }
     const payload = {
       id: user.id,
